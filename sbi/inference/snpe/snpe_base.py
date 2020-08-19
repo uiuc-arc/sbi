@@ -93,7 +93,7 @@ class PosteriorEstimator(NeuralInference, ABC):
         self._prior_masks, self._model_bank = [], []
 
         # Extra SNPE-specific fields summary_writer.
-        self._summary.update({"rejection_sampling_acceptance_rates": []})  # type:ignore
+        #self._summary.update({"rejection_sampling_acceptance_rates": []})  # type:ignore
 
     def __call__(
         self,
@@ -226,13 +226,13 @@ class PosteriorEstimator(NeuralInference, ABC):
                 )
 
             # Update tensorboard and summary dict.
-            self._summarize(
-                round_=round_,
-                x_o=self._posterior.default_x,
-                theta_bank=self._theta_bank,
-                x_bank=self._x_bank,
-                posterior_samples_acceptance_rate=acceptance_rate,
-            )
+            #self._summarize(
+            #    round_=round_,
+            #    x_o=self._posterior.default_x,
+            #    theta_bank=self._theta_bank,
+            #    x_bank=self._x_bank,
+            #    posterior_samples_acceptance_rate=acceptance_rate,
+            #)
 
             # Update description for progress bar.
             if self._show_round_summary:
@@ -401,8 +401,8 @@ class PosteriorEstimator(NeuralInference, ABC):
         self._report_convergence_at_end(epoch, stop_after_epochs, max_num_epochs)
 
         # Update summary.
-        self._summary["epochs"].append(epoch)
-        self._summary["best_validation_log_probs"].append(self._best_val_log_prob)
+        #self._summary["epochs"].append(epoch)
+        #self._summary["best_validation_log_probs"].append(self._best_val_log_prob)
 
     def _loss(
         self,

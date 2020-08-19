@@ -143,14 +143,14 @@ class NeuralInference(ABC):
         #     2. `method_family` cannot be resolved only from `self.__class__.__name__`,
         #         since SRE, AALR demand different handling but are both in SRE class.
 
-        self._summary_writer = (
-            self._default_summary_writer() if summary_writer is None else summary_writer
-        )
+        #self._summary_writer = (
+        #    self._default_summary_writer() if summary_writer is None else summary_writer
+        #)
 
         # Logging during training (by SummaryWriter).
-        self._summary = dict(
-            median_observation_distances=[], epochs=[], best_validation_log_probs=[],
-        )
+        #self._summary = dict(
+        #    median_observation_distances=[], epochs=[], best_validation_log_probs=[],
+        #)
 
     def _converged(self, epoch: int, stop_after_epochs: int) -> bool:
         """Return whether the training converged yet and save best model state so far.
@@ -317,24 +317,24 @@ class NeuralInference(ABC):
 
         figure, axes = pairplot(parameters.to("cpu").numpy())
 
-        self._summary_writer.add_figure(
-            tag="posterior_samples", figure=figure, global_step=round_ + 1
-        )
+        #self._summary_writer.add_figure(
+        #    tag="posterior_samples", figure=figure, global_step=round_ + 1
+        #)
 
         # Add most recent training stats to summary writer.
-        self._summary_writer.add_scalar(
-            tag="epochs_trained",
-            scalar_value=self._summary["epochs"][-1],
-            global_step=round_ + 1,
-        )
+        #self._summary_writer.add_scalar(
+        #    tag="epochs_trained",
+        #    scalar_value=self._summary["epochs"][-1],
+        #    global_step=round_ + 1,
+        #)
 
-        self._summary_writer.add_scalar(
-            tag="best_validation_log_prob",
-            scalar_value=self._summary["best_validation_log_probs"][-1],
-            global_step=round_ + 1,
-        )
+        #self._summary_writer.add_scalar(
+        #    tag="best_validation_log_prob",
+        #    scalar_value=self._summary["best_validation_log_probs"][-1],
+        #    global_step=round_ + 1,
+        #)
 
-        self._summary_writer.flush()
+        #self._summary_writer.flush()
 
     @property
     def summary(self):

@@ -85,7 +85,7 @@ class LikelihoodEstimator(NeuralInference, ABC):
         self._mcmc_method = mcmc_method
 
         # SNLE-specific summary_writer fields.
-        self._summary.update({"mcmc_times": []})  # type: ignore
+        #self._summary.update({"mcmc_times": []})  # type: ignore
 
     def __call__(
         self,
@@ -290,8 +290,8 @@ class LikelihoodEstimator(NeuralInference, ABC):
         self._report_convergence_at_end(epoch, stop_after_epochs, max_num_epochs)
 
         # Update summary.
-        self._summary["epochs"].append(epoch)
-        self._summary["best_validation_log_probs"].append(self._best_val_log_prob)
+        #self._summary["epochs"].append(epoch)
+        #self._summary["best_validation_log_probs"].append(self._best_val_log_prob)
 
 
 class PotentialFunctionProvider:
