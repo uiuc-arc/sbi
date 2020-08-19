@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from typing import Union, Tuple
-
+import numpy as np
 import torch
 from torch import Tensor
 from torch.distributions import Distribution
@@ -137,7 +137,8 @@ def check_c2st(x: Tensor, y: Tensor, alg: str, tol: float = 0.1) -> None:
     score = c2st(x, y).item()
 
     print(f"c2st for {alg} is {score:.2f}.")
-
-    assert (
-        (0.5 - tol) <= score <= (0.5 + tol)
-    ), f"c2st={score:.2f} is too far from the desired near-chance performance."
+    val = 0.5
+    np.testing.assert_allclose(score, val, rtol=0, atol=0.1)
+    # assert (
+    #     (0.5 - tol) <= score <= (0.5 + tol)
+    # ), f"c2st={score:.2f} is too far from the desired near-chance performance."
