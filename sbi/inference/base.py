@@ -289,27 +289,27 @@ class NeuralInference(ABC):
             median_observation_distance = torch.median(
                 torch.sqrt(torch.sum((x_bank[-1] - x_o.reshape(1, -1)) ** 2, dim=-1,))
             )
-            self._summary["median_observation_distances"].append(
-                median_observation_distance.item()
-            )
+            #self._summary["median_observation_distances"].append(
+            #    median_observation_distance.item()
+            #)
 
-            self._summary_writer.add_scalar(
-                tag="median_observation_distance",
-                scalar_value=self._summary["median_observation_distances"][-1],
-                global_step=round_ + 1,
-            )
+            #self._summary_writer.add_scalar(
+            #    tag="median_observation_distance",
+            #    scalar_value=self._summary["median_observation_distances"][-1],
+            #    global_step=round_ + 1,
+            #)
 
         # Rejection sampling acceptance rate, only for SNPE.
         if posterior_samples_acceptance_rate is not None:
-            self._summary["rejection_sampling_acceptance_rates"].append(
-                posterior_samples_acceptance_rate.item()
-            )
-
-            self._summary_writer.add_scalar(
-                tag="rejection_sampling_acceptance_rate",
-                scalar_value=self._summary["rejection_sampling_acceptance_rates"][-1],
-                global_step=round_ + 1,
-            )
+            #self._summary["rejection_sampling_acceptance_rates"].append(
+            #    posterior_samples_acceptance_rate.item()
+            #)
+            pass
+            #self._summary_writer.add_scalar(
+            #    tag="rejection_sampling_acceptance_rate",
+            #    scalar_value=self._summary["rejection_sampling_acceptance_rates"][-1],
+            #    global_step=round_ + 1,
+            #)
 
         # Plot most recently sampled parameters.
         # XXX: need more plotting kwargs, e.g., prior limits.
