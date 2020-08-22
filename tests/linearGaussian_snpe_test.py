@@ -25,10 +25,10 @@ from tests.test_utils import (
 
 
 @pytest.mark.parametrize(
-    "num_dim, prior_str, num_samples, num_simulations_per_round", ((2, "gaussian", 110, 200), (2, "uniform", 370, 200), (1, "gaussian", 130, 110),),
+    "num_dim, prior_str, num_samples, num_simulations_per_round", ((2, "gaussian", 110, 200), (2, "uniform", 370, 200), (1, "gaussian", 130, 100),),
 )
 def test_c2st_snpe_on_linearGaussian(
-    num_dim: int, prior_str: str, set_seed,
+    num_dim: int, prior_str: str, num_samples, num_simulations_per_round, set_seed,
 ):
     """Test whether SNPE C infers well a simple example with available ground truth.
 
