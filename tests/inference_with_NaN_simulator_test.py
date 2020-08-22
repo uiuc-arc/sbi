@@ -40,11 +40,11 @@ def test_handle_invalid_x(x_shape, set_seed):
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    ("method", "exclude_invalid_x", "percent_nans"),
-    ((SNPE_C, True, 0.05), (SNL, True, 0.05), (SRE, True, 0.05),),
+    ("method", "exclude_invalid_x", "percent_nans", "num_samples", "num_simulations"),
+    ((SNPE_C, True, 0.05, 100, 100), (SNL, True, 0.05, 100, 200), (SRE, True, 0.05, 100, 400),),
 )
 def test_inference_with_nan_simulator(
-    method, exclude_invalid_x, percent_nans, set_seed
+    method, exclude_invalid_x, percent_nans, num_samples, num_simulations, set_seed
 ):
 
     # likelihood_mean will be likelihood_shift+theta
@@ -52,8 +52,8 @@ def test_inference_with_nan_simulator(
     likelihood_shift = -1.0 * ones(num_dim)
     likelihood_cov = 0.3 * eye(num_dim)
     x_o = zeros(1, num_dim)
-    num_samples = 500
-    num_simulations = 2000
+    #num_samples = 500
+    #num_simulations = 2000
 
     def linear_gaussian_nan(
         theta, likelihood_shift=likelihood_shift, likelihood_cov=likelihood_cov

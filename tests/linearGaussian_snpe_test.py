@@ -25,7 +25,7 @@ from tests.test_utils import (
 
 
 @pytest.mark.parametrize(
-    "num_dim, prior_str", ((2, "gaussian"), (2, "uniform"), (1, "gaussian"),),
+    "num_dim, prior_str, num_samples, num_simulations_per_round", ((2, "gaussian", 110, 200), (2, "uniform", 370, 200), (1, "gaussian", 130, 110),),
 )
 def test_c2st_snpe_on_linearGaussian(
     num_dim: int, prior_str: str, set_seed,
@@ -39,7 +39,7 @@ def test_c2st_snpe_on_linearGaussian(
     device = "cpu"
     configure_default_device(device)
     x_o = zeros(1, num_dim)
-    num_samples = 1000
+    #  num_samples = 1000
 
     # likelihood_mean will be likelihood_shift+theta
     likelihood_shift = -1.0 * ones(num_dim)
@@ -71,7 +71,7 @@ def test_c2st_snpe_on_linearGaussian(
     )
 
     posterior = infer(
-        num_rounds=1, num_simulations_per_round=2000, training_batch_size=100
+        num_rounds=1, num_simulations_per_round=num_simulations_per_round, training_batch_size=100
     ).set_default_x(x_o)
     samples = posterior.sample((num_samples,))
 
@@ -132,7 +132,7 @@ def test_c2st_snpe_on_linearGaussian_different_dims(set_seed):
     discard_dims = theta_dim - x_dim
 
     x_o = zeros(1, x_dim)
-    num_samples = 1000
+    num_samples = 130
 
     # likelihood_mean will be likelihood_shift+theta
     likelihood_shift = -1.0 * ones(x_dim)
@@ -164,7 +164,7 @@ def test_c2st_snpe_on_linearGaussian_different_dims(set_seed):
         sample_with_mcmc=False,
     )
 
-    posterior = infer(num_rounds=1, num_simulations_per_round=2000)  # type: ignore
+    posterior = infer(num_rounds=1, num_simulations_per_round=400)  # type: ignore
     samples = posterior.sample((num_samples,), x=x_o)
 
     # Compute the c2st and assert it is near chance level of 0.5.
@@ -194,7 +194,7 @@ def test_c2st_multi_round_snpe_on_linearGaussian(method_str: str, set_seed):
 
     num_dim = 2
     x_o = zeros((1, num_dim))
-    num_samples = 1000
+    num_samples = 310
 
     # likelihood_mean will be likelihood_shift+theta
     likelihood_shift = -1.0 * ones(num_dim)
@@ -218,7 +218,7 @@ def test_c2st_multi_round_snpe_on_linearGaussian(method_str: str, set_seed):
         density_estimator="maf",
         show_progress_bars=False,
     )
-    call_args = dict(num_rounds=2, x_o=x_o, num_simulations_per_round=1000)
+    call_args = dict(num_rounds=2, x_o=x_o, num_simulations_per_round=130)
 
     if method_str == "snpe_b":
         infer = SNPE_B(simulation_batch_size=10, **creation_args)

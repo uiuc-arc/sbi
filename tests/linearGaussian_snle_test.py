@@ -66,7 +66,7 @@ def test_c2st_snl_on_linearGaussian_different_dims(set_seed):
     discard_dims = theta_dim - x_dim
 
     x_o = ones(1, x_dim)
-    num_samples = 1000
+    num_samples = 100
 
     # likelihood_mean will be likelihood_shift+theta
     likelihood_shift = -1.0 * ones(x_dim)
@@ -97,7 +97,7 @@ def test_c2st_snl_on_linearGaussian_different_dims(set_seed):
         device=device,
     )
 
-    posterior = infer(num_rounds=1, num_simulations_per_round=5000)  # type: ignore
+    posterior = infer(num_rounds=1, num_simulations_per_round=500)  # type: ignore
     samples = posterior.sample((num_samples,), x=x_o, thin=3)
 
     # Compute the c2st and assert it is near chance level of 0.5.
@@ -105,9 +105,10 @@ def test_c2st_snl_on_linearGaussian_different_dims(set_seed):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("num_dim", (1, 2))
-@pytest.mark.parametrize("prior_str", ("uniform", "gaussian"))
-def test_c2st_snl_on_linearGaussian(num_dim: int, prior_str: str, set_seed):
+#@pytest.mark.parametrize("num_dim", (1, 2))
+#@pytest.mark.parametrize("prior_str", ("uniform", "gaussian"))
+@pytest.mark.parametrize(("prior_str", "num_dim" , "num_samples", "num_simulations"),(("uniform", 1, 100, 110), ("uniform", 2, 100, 190), ("gaussian", 1, 100, 100), ("gaussian", 2, 100, 100)))
+def test_c2st_snl_on_linearGaussian(num_dim: int, prior_str: str, num_samples: int, num_simulations:int , set_seed):
     """Test SNL on linear Gaussian, comparing to ground truth posterior via c2st.
 
     Args:
@@ -117,7 +118,7 @@ def test_c2st_snl_on_linearGaussian(num_dim: int, prior_str: str, set_seed):
     """
 
     x_o = zeros((1, num_dim))
-    num_samples = 500
+    #num_samples = 500
 
     # likelihood_mean will be likelihood_shift+theta
     likelihood_shift = -1.0 * ones(num_dim)
@@ -145,7 +146,7 @@ def test_c2st_snl_on_linearGaussian(num_dim: int, prior_str: str, set_seed):
         show_progress_bars=False,
     )
 
-    posterior = infer(num_rounds=1, num_simulations_per_round=1000).set_default_x(x_o)
+    posterior = infer(num_rounds=1, num_simulations_per_round=num_simulations).set_default_x(x_o)
 
     samples = posterior.sample(sample_shape=(num_samples,), thin=3)
 

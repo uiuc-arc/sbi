@@ -29,7 +29,7 @@ def mdn_inference_with_different_methods(method):
 
     num_dim = 2
     x_o = torch.tensor([[1.0, 0.0]])
-    num_samples = 500
+    num_samples = 360
 
     # likelihood_mean will be likelihood_shift+theta
     likelihood_shift = -1.0 * ones(num_dim)
@@ -49,7 +49,7 @@ def mdn_inference_with_different_methods(method):
     infer = method(simulator, prior, density_estimator="mdn")
 
     posterior = infer(
-        num_rounds=1, num_simulations_per_round=1000, training_batch_size=50
+        num_rounds=1, num_simulations_per_round=960, training_batch_size=40
     ).set_default_x(x_o)
     samples = posterior.sample((num_samples,))
 

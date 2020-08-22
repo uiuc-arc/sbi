@@ -67,7 +67,7 @@ def test_c2st_sre_on_linearGaussian_different_dims(set_seed):
     discard_dims = theta_dim - x_dim
 
     x_o = ones(1, x_dim)
-    num_samples = 1000
+    num_samples = 130
 
     likelihood_shift = -1.0 * ones(
         x_dim
@@ -100,7 +100,7 @@ def test_c2st_sre_on_linearGaussian_different_dims(set_seed):
         device=device,
     )
 
-    posterior = infer(num_rounds=1, num_simulations_per_round=5000)
+    posterior = infer(num_rounds=1, num_simulations_per_round=100)
     samples = posterior.sample((num_samples,), x=x_o, thin=3)
 
     # Compute the c2st and assert it is near chance level of 0.5.
@@ -129,7 +129,7 @@ def test_c2st_sre_on_linearGaussian(
     """
 
     x_o = zeros(1, num_dim)
-    num_samples = 500
+    num_samples = 100
 
     # `likelihood_mean` will be `likelihood_shift + theta`.
     likelihood_shift = -1.0 * ones(num_dim)
@@ -165,7 +165,7 @@ def test_c2st_sre_on_linearGaussian(
     infer = SRE(**kwargs) if method_str == "sre" else AALR(**kwargs)
 
     # Should use default `num_atoms=10` for SRE; `num_atoms=2` for AALR
-    posterior = infer(num_rounds=1, num_simulations_per_round=1000).set_default_x(x_o)
+    posterior = infer(num_rounds=1, num_simulations_per_round=300).set_default_x(x_o)
 
     samples = posterior.sample(sample_shape=(num_samples,), thin=3)
 
