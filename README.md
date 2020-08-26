@@ -23,6 +23,7 @@ from sbi.inference import infer
 # import your simulator, define your prior over the parameters
 parameter_posterior = infer(simulator, prior, method='SNPE', num_simulations=100)
 ```
+
 See below for the available methods of inference, `SNPE`, `SNRE` and `SNLE`.
 
 
