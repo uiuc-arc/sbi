@@ -1,117 +1,50 @@
-[![PyPI version](https://badge.fury.io/py/sbi.svg)](https://badge.fury.io/py/sbi)
-[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/mackelab/sbi/blob/master/CONTRIBUTING.md)
-[![Tests](https://github.com/mackelab/sbi/workflows/Tests/badge.svg?branch=main)](https://github.com/mackelab/sbi/actions)
-[![codecov](https://codecov.io/gh/mackelab/sbi/branch/main/graph/badge.svg)](https://codecov.io/gh/mackelab/sbi)
-[![GitHub license](https://img.shields.io/github/license/mackelab/sbi)](https://github.com/mackelab/sbi/blob/master/LICENSE.txt)
-[![DOI](https://joss.theoj.org/papers/10.21105/joss.02505/status.svg)](https://doi.org/10.21105/joss.02505)
+![Tests](https://github.com/mackelab/sbi/workflows/Tests/badge.svg?branch=master)
 
-## sbi: simulation-based inference
-[Getting Started](https://www.mackelab.org/sbi/tutorial/00_getting_started/) | [Documentation](https://www.mackelab.org/sbi/)
+## Warning: pre-release stage
 
-`sbi` is a PyTorch package for simulation-based inference. Simulation-based inference is  
-the process of finding parameters of a simulator from observations.
+SBI is currently under very active development leading up to a first stable release on 12th June.
 
-`sbi` takes a Bayesian approach and returns a full posterior distribution
-over the parameters, conditional on the observations. This posterior can be amortized (i.e.
-useful for any observation) or focused (i.e. tailored to a particular observation), with different
-computational trade-offs.
+Some aspects of the interface will change, and the documentation for running the inference methods (`SnpeB, SnpeC (APT), SRE, SNL`) is not accessible  at the moment through regular Python introspection - you'll have to look at the superclasses ([`SnpeBase`](https://github.com/mackelab/sbi/blob/master/sbi/inference/snpe/snpe_base.py), [`NeuralInference`](https://github.com/mackelab/sbi/blob/master/sbi/inference/base.py)). Authorship information is also out of date and licensing still pending (it will be free software).
 
-`sbi` offers a simple interface for one-line posterior inference.
+If you'd still like to give it a spin before release, please, by all means! We're glad to engage in conversation about it, please file an issue if you encounter unexpected behaviour or wonder about specific functionality.
 
-```python
-from sbi.inference import infer
-# import your simulator, define your prior over the parameters
-parameter_posterior = infer(simulator, prior, method='SNPE', num_simulations=100)
-```
+## Description
 
-See below for the available methods of inference, `SNPE`, `SNRE` and `SNLE`.
+Building on code for "On Contrastive Learning for Likelihood-free Inference" in <https://github.com/conormdurkan/lfi>.
 
+Features neural likelihood-free methods from
 
-## Installation
+> Papamakarios et al., _Sequential Neural Likelihood_ (SNL), 2019. [[arXiv]](https://arxiv.org/abs/1805.07226)
+>
+>Greenberg et al., _Automatic Posterior Transformation_ (SNPE-C), 2019. [[arXiv]](https://arxiv.org/abs/1905.07488)
+>
+>Hermans et al., _Likelihood-free Inference with Amortized Approximate Likelihood Ratios_ (SRE), 2019.  [[arXiv]](https://arxiv.org/abs/1903.04057)
+>
+>Durkan et al., _On Contrastive Learning for Likelihood-free Inference_, 2020 [[arXiv]](https://arxiv.org/abs/2002.03712) 
 
-`sbi` requires Python 3.6 or higher. We recommend to use a [`conda`](https://docs.conda.io/en/latest/miniconda.html) virtual
-environment ([Miniconda installation instructions](https://docs.conda.io/en/latest/miniconda.html])). If `conda` is installed on the system, an environment for
-installing `sbi` can be created as follows:
-```commandline
-# Create an environment for sbi (indicate Python 3.6 or higher); activate it
-$ conda create -n sbi_env python=3.7 && conda activate sbi_env
-```
+## Setup
 
-Independent of whether you are using `conda` or not, `sbi` can be installed using `pip`:
-```commandline
-$ pip install sbi
-```
+Clone the repo and install all the dependencies using the `environment.yml` file to create a conda environment: `conda env create -f environment.yml`. If you already have an `sbi` environment and want to refresh dependencies, just run `conda env update -f environment.yml --prune`.
 
-To test the installation, drop into a python prompt and run
-```python
-from sbi.examples.minimal import simple
-posterior = simple()
-print(posterior)
-```
+Alternatively, you can install via `setup.py` using `pip install -e ".[dev]"` (the dev flag installs development and testing dependencies).
 
-## Inference Algorithms
+## Examples
 
-The following algorithms are currently available:
+Examples are collected in notebooks in `examples/`.
 
-#### Sequential Neural Posterior Estimation (SNPE)
+## Binary files and Jupyter notebooks
 
-* [`SNPE_C`](https://www.mackelab.org/sbi/reference/#sbi.inference.snpe.snpe_c.SNPE_C) or `APT` from Greenberg D, Nonnenmacher M, and Macke J [_Automatic
-  Posterior Transformation for likelihood-free
-  inference_](https://arxiv.org/abs/1905.07488) (ICML 2019).
+### Using `sbi`
 
+We use git lfs to store large binary files. Those files are not downloaded by cloning the repository, but you have to pull them separately. To do so follow installation instructions here [https://git-lfs.github.com/](https://git-lfs.github.com/). In particular, in a freshly cloned repository on a new machine, you will need to run both `git-lfs install` and `git-lfs pull`.
 
-#### Sequential Neural Likelihood Estimation (SNLE)
-* [`SNLE_A`](https://www.mackelab.org/sbi/reference/#sbi.inference.snle.snle_a.SNLE_A) or just `SNL` from Papamakarios G, Sterrat DC and Murray I [_Sequential
-  Neural Likelihood_](https://arxiv.org/abs/1805.07226) (AISTATS 2019).
+### Contributing to `sbi`
 
+We use a filename filter to track lfs files. Once you installed and pulled git lfs you can add a file to git lfs by appending `_gitlfs` to the basename, e.g., `oldbase_gitlfs.npy`. Then add the file to the index, commit, and it will be tracked by git lfs.
 
-#### Sequential Neural Ratio Estimation (SNRE)
-
-* [`SNRE_A`](https://www.mackelab.org/sbi/reference/#sbi.inference.snre.snre_a.SNRE_A) or `AALR` from Hermans J, Begy V, and Louppe G. [_Likelihood-free Inference with Amortized Approximate Likelihood Ratios_](https://arxiv.org/abs/1903.04057) (ICML 2020).
-
-* [`SNRE_B`](https://www.mackelab.org/sbi/reference/#sbi.inference.snre.snre_b.SNRE_B) or `SRE` from Durkan C, Murray I, and Papamakarios G. [_On Contrastive Learning for Likelihood-free Inference_](https://arxiv.org/abs/2002.03712) (ICML 2020).
-
-
-## Feedback and Contributions
-
-We would like to hear how `sbi` is working for your inference problems as well as receive bug reports, pull requests and other feedback (see
-[contribute](http://www.mackelab.org/sbi/contribute/)).
-
+Additionally, to avoid large diffs due to Jupyter notebook outputs we are using `nbstripout` to remove output from notebooks before every commit. The `nbstripout` package is downloaded automatically during installation of `sbi`. However, **please make sure to set up the filter yourself**, e.g., through `nbstriout --install` or with different options as described [here](https://github.com/kynan/nbstripout).
 
 ## Acknowledgements
 
-`sbi` is the successor (using PyTorch) of the
-[`delfi`](https://github.com/mackelab/delfi) package. It was started as a fork of Conor
-M. Durkan's `lfi`. `sbi` runs as a community project; development is coordinated at the
-[mackelab](https://uni-tuebingen.de/en/research/core-research/cluster-of-excellence-machine-learning/research/research/cluster-research-groups/professorships/machine-learning-in-science/). See also [credits](https://github.com/mackelab/sbi/blob/master/docs/docs/credits.md).
-
-
-## Support
-
-`sbi` has been developed in the context of the [ADIMEM
-grant](https://fit.uni-tuebingen.de/Activity/Details?id=6097), project A. ADIMEM is a
-BMBF grant awarded to groups at the Technical University of Munich, University of
-Tübingen and Research Center caesar of the Max Planck Gesellschaft.
-
-
-## License
-
-[Affero General Public License v3 (AGPLv3)](https://www.gnu.org/licenses/)
-
-
-## Citation
-If you use `sbi` consider citing the [corresponding paper](https://doi.org/10.21105/joss.02505):
-```
-@article{tejero-cantero2020sbi,
-  doi = {10.21105/joss.02505},
-  url = {https://doi.org/10.21105/joss.02505},
-  year = {2020},
-  publisher = {The Open Journal},
-  volume = {5},
-  number = {52},
-  pages = {2505},
-  author = {Alvaro Tejero-Cantero and Jan Boelts and Michael Deistler and Jan-Matthis Lueckmann and Conor Durkan and Pedro J. Gonçalves and David S. Greenberg and Jakob H. Macke},
-  title = {sbi: A toolkit for simulation-based inference},
-  journal = {Journal of Open Source Software}
-}
-```
+This code builds heavily on previous work by [Conor Durkan](https://conormdurkan.github.io/), [George Papamakarios](https://gpapamak.github.io/) and [Artur Bekasov](https://arturbekasov.github.io/).
+Relevant repositories include [bayesiains/nsf](https://github.com/bayesiains/nsf) and [conormdurkan/lfi](https://github.com/conormdurkan/lfi). 

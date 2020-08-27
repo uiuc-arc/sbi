@@ -1,17 +1,13 @@
-# This file is part of sbi, a toolkit for simulation-based inference. sbi is licensed
-# under the Affero General Public License v3, see <https://www.gnu.org/licenses/>.
-
 """Test PyTorch utility functions."""
-from __future__ import annotations
 
 import numpy as np
 import torch
-from torch import distributions as distributions
+import torch.distributions as distributions
 import torchtestcase
 
 from sbi.utils import torchutils
 from torch import zeros, ones, eye
-from tests.test_utils import kl_d_via_monte_carlo
+from tests.test_utils import dkl_via_monte_carlo
 
 
 # XXX move to pytest? - investigate how to derive from TorchTestCase
@@ -138,38 +134,6 @@ def test_atleast_2d_many():
     assert t4.ndim == 2
 
 
-def test_maybe_add_batch_dim_to_size():
-    t1 = torch.Size([1])
-    t2 = torchutils.maybe_add_batch_dim_to_size(t1)
-    assert t2 == torch.Size([1, 1])
-
-    t1 = torch.Size([3])
-    t2 = torchutils.maybe_add_batch_dim_to_size(t1)
-    assert t2 == torch.Size([1, 3])
-
-    t1 = torch.Size([1, 3])
-    t2 = torchutils.maybe_add_batch_dim_to_size(t1)
-    assert t2 == torch.Size([1, 3])
-
-    t1 = torch.Size([2, 3])
-    t2 = torchutils.maybe_add_batch_dim_to_size(t1)
-    assert t2 == torch.Size([2, 3])
-
-    t1 = torch.Size([1, 2, 3])
-    t2 = torchutils.maybe_add_batch_dim_to_size(t1)
-    assert t2 == torch.Size([1, 2, 3])
-
-
-def test_batched_first_of_batch():
-    t = torch.ones(10, 2)
-    out_t = torchutils.batched_first_of_batch(t)
-    assert (out_t == torch.ones(1, 2)).all()
-
-    t = torch.ones(1, 2)
-    out_t = torchutils.batched_first_of_batch(t)
-    assert (out_t == torch.ones(1, 2)).all()
-
-
 def test_dkl_gauss():
     """
     Test whether for two 1D Gaussians and two 2D Gaussians the Monte-Carlo-based KLd
@@ -186,7 +150,7 @@ def test_dkl_gauss():
 
     for d1, d2 in zip(dist1, dist2):
         torch_dkl = distributions.kl.kl_divergence(d1, d2)
-        monte_carlo_dkl = kl_d_via_monte_carlo(d1, d2, num_samples=5000)
+        monte_carlo_dkl = dkl_via_monte_carlo(d1, d2, num_samples=1000)
 
         max_dkl_diff = 0.4
 

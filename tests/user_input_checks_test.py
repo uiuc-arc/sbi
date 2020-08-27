@@ -1,24 +1,22 @@
-# This file is part of sbi, a toolkit for simulation-based inference. sbi is licensed
-# under the Affero General Public License v3, see <https://www.gnu.org/licenses/>.
-
 from __future__ import annotations
+from typing import Callable, Optional, Union
 
-from typing import Callable, Optional, Union, Dict, Any, Tuple, Union, cast, List, Sequence, TypeVar
-
+import numpy as np
 import pytest
 import torch
-from pyknos.mdn.mdn import MultivariateGaussianMDN
 from scipy.stats import beta, multivariate_normal, uniform
-from torch import Tensor, eye, nn, ones, zeros
+from torch import Tensor, ones, zeros, eye
 from torch.distributions import Beta, Distribution, Gamma, MultivariateNormal, Uniform
 
-from sbi.inference import SNPE_C
-from sbi.simulators.linear_gaussian import diagonal_linear_gaussian
+from sbi.inference.snpe import SnpeC
+from sbi.inference.snl import SNL
+from sbi.inference.sre import SRE
+from sbi.simulators.linear_gaussian import standard_linear_gaussian
 from sbi.user_input.user_input_checks import (
-    prepare_for_sbi,
+    prepare_sbi_problem,
     process_prior,
     process_simulator,
-    process_x,
+    process_x_o,
 )
 from sbi.user_input.user_input_checks_utils import (
     CustomPytorchWrapper,
@@ -26,8 +24,10 @@ from sbi.user_input.user_input_checks_utils import (
     PytorchReturnTypeWrapper,
     ScipyPytorchWrapper,
 )
-from sbi.utils.get_nn_models import posterior_nn
 from sbi.utils.torchutils import BoxUniform
+
+# use cpu by default
+torch.set_default_tensor_type("torch.FloatTensor")
 
 
 class UserNumpyUniform:
@@ -62,7 +62,7 @@ def linear_gaussian_no_batch(theta):
 
 def numpy_linear_gaussian(theta):
     """Linear Gaussian simulator wrapped to get and return numpy."""
-    return diagonal_linear_gaussian(torch.as_tensor(theta, dtype=torch.float32)).numpy()
+    return standard_linear_gaussian(torch.as_tensor(theta, dtype=torch.float32)).numpy()
 
 
 def list_simulator(theta):
@@ -72,7 +72,7 @@ def list_simulator(theta):
 def matrix_simulator(theta):
     """Return a 2-by-2 matrix."""
     assert theta.numel() == 4
-    return theta.reshape(1, 2, 2)
+    return theta.reshape(2, 2)
 
 
 @pytest.mark.parametrize(
@@ -156,17 +156,45 @@ def test_process_prior(prior):
 
 
 @pytest.mark.parametrize(
-    "x, x_shape", ((ones(3), torch.Size([1, 3])), (ones(1, 3), torch.Size([1, 3])),),
+    "prior, x_o",
+    (
+        (BoxUniform(zeros(3), ones(3)), ones(3)),
+        (BoxUniform(zeros(3), ones(3)), np.ones(3)),
+        pytest.param(
+            BoxUniform(zeros(1), ones(1)), 2.0, marks=pytest.mark.xfail
+        ),  # scalar observation.
+        pytest.param(
+            BoxUniform(zeros(3), ones(3)), [2.0], marks=pytest.mark.xfail
+        ),  # list observation.
+        (BoxUniform(zeros(3), ones(3)), ones(1, 3)),
+        (BoxUniform(zeros(1), ones(1)), ones(1, 1)),
+        (BoxUniform(zeros(3), ones(3)), np.zeros((1, 3))),
+        (BoxUniform(zeros(1), ones(1)), np.zeros((1, 1))),
+    ),
 )
-def test_process_x(x, x_shape):
-    process_x(x, x_shape)
+def test_process_x_o(
+    prior: Distribution,
+    x_o: Union[Tensor, np.ndarray],
+    simulator: Optional[Callable] = standard_linear_gaussian,
+):
+    x_o, x_o_dim = process_x_o(x_o, simulator, prior)
+
+    assert x_o.shape == torch.Size([1, x_o_dim])
+
+
+def test_process_matrix_observation():
+    prior = BoxUniform(zeros(4), ones(4))
+    x_o = np.zeros((1, 2, 2))
+    simulator = matrix_simulator
+
+    x_o, x_o_dim = process_x_o(x_o, simulator, prior)
 
 
 @pytest.mark.parametrize(
     "simulator, prior",
     (
-        (diagonal_linear_gaussian, BoxUniform(zeros(1), ones(1))),
-        (diagonal_linear_gaussian, BoxUniform(zeros(2), ones(2))),
+        (standard_linear_gaussian, BoxUniform(zeros(1), ones(1))),
+        (standard_linear_gaussian, BoxUniform(zeros(2), ones(2))),
         (numpy_linear_gaussian, UserNumpyUniform(zeros(2), ones(2), True)),
         (linear_gaussian_no_batch, BoxUniform(zeros(2), ones(2))),
         pytest.param(list_simulator, BoxUniform(zeros(2), ones(2)),),
@@ -187,43 +215,49 @@ def test_process_simulator(simulator: Callable, prior: Distribution):
 
 
 @pytest.mark.parametrize(
-    "simulator, prior",
+    "simulator, prior, x_o",
     (
-        (linear_gaussian_no_batch, BoxUniform(zeros(3), ones(3)),),
+        (linear_gaussian_no_batch, BoxUniform(zeros(3), ones(3)), zeros(3),),
         (
             numpy_linear_gaussian,
             UserNumpyUniform(zeros(3), ones(3), return_numpy=True),
+            np.zeros((1, 3)),
         ),
-        (diagonal_linear_gaussian, BoxUniform(zeros(3), ones(3))),
+        (standard_linear_gaussian, BoxUniform(zeros(3), ones(3)), zeros(1, 3)),
         (
-            diagonal_linear_gaussian,
+            standard_linear_gaussian,
             BoxUniform(zeros(3, dtype=torch.float64), ones(3, dtype=torch.float64)),
+            zeros(3),
         ),
         (
             numpy_linear_gaussian,
             UserNumpyUniform(zeros(3), ones(3), return_numpy=True),
+            np.zeros((1, 3)),
         ),
         (
-            diagonal_linear_gaussian,
+            standard_linear_gaussian,
             [
                 Gamma(ones(1), ones(1)),
                 Beta(ones(1), ones(1)),
                 MultivariateNormal(zeros(2), eye(2)),
             ],
+            zeros(1, 4),
         ),
-        pytest.param(list_simulator, BoxUniform(zeros(3), ones(3)),),
+        pytest.param(list_simulator, BoxUniform(zeros(3), ones(3)), zeros(1, 3),),
     ),
 )
-def test_prepare_sbi_problem(simulator: Callable, prior):
+def test_prepare_sbi_problem(
+    simulator: Callable, prior, x_o: Union[Tensor, np.ndarray]
+):
     """Test user interface by passing different kinds of simulators, prior and data.
 
     Args:
         simulator: simulator function
         prior: prior as defined by the user (pytorch, scipy, custom)
-        x_shape: shape of data as defined by the user.
+        x_o: data as defined by the user.
     """
 
-    simulator, prior = prepare_for_sbi(simulator, prior)
+    simulator, prior, x_o = prepare_sbi_problem(simulator, prior, x_o)
 
     # check batch sims and type
     n_batch = 1
@@ -233,48 +267,54 @@ def test_prepare_sbi_problem(simulator: Callable, prior):
 
 
 @pytest.mark.parametrize(
-    "user_simulator, user_prior",
+    "user_simulator, user_prior, user_x_o",
     (
         (
-            diagonal_linear_gaussian,
+            standard_linear_gaussian,
             BoxUniform(zeros(3, dtype=torch.float64), ones(3, dtype=torch.float64)),
+            zeros(3),
         ),
-        (linear_gaussian_no_batch, BoxUniform(zeros(3), ones(3))),
+        (linear_gaussian_no_batch, BoxUniform(zeros(3), ones(3)), zeros(3),),
         (
             numpy_linear_gaussian,
             UserNumpyUniform(zeros(3), ones(3), return_numpy=True),
+            np.zeros((1, 3)),
         ),
-        (diagonal_linear_gaussian, BoxUniform(zeros(3), ones(3))),
-        (linear_gaussian_no_batch, BoxUniform(zeros(3), ones(3))),
-        (list_simulator, BoxUniform(-ones(3), ones(3))),
+        (standard_linear_gaussian, BoxUniform(zeros(3), ones(3)), zeros(1, 3)),
+        (linear_gaussian_no_batch, BoxUniform(zeros(3), ones(3)), zeros(1, 3)),
+        pytest.param(list_simulator, BoxUniform(zeros(3), ones(3)), zeros(1, 3),),
         (
             numpy_linear_gaussian,
             UserNumpyUniform(zeros(3), ones(3), return_numpy=True),
+            np.zeros((1, 3)),
         ),
-        (
-            diagonal_linear_gaussian,
+        pytest.param(
+            standard_linear_gaussian,
             (
                 Gamma(ones(1), ones(1)),
                 Beta(ones(1), ones(1)),
                 MultivariateNormal(zeros(2), eye(2)),
             ),
+            zeros(1, 4),
         ),
     ),
 )
-def test_inference_with_user_sbi_problems(user_simulator: Callable, user_prior):
+def test_inference_with_user_sbi_problems(
+    user_simulator: Callable, user_prior, user_x_o: Union[Tensor, np.ndarray]
+):
     """
     Test inference with combinations of user defined simulators, priors and x_os.
     """
 
-    infer = SNPE_C(
-        *prepare_for_sbi(user_simulator, user_prior),
-        density_estimator="maf",
+    infer = SnpeC(
+        simulator=user_simulator,
+        x_o=user_x_o,
+        prior=user_prior,
         simulation_batch_size=1,
-        show_progress_bars=False,
     )
 
     # Run inference.
-    _ = infer(num_simulations=100, max_num_epochs=2)
+    _ = infer(num_rounds=1, num_simulations_per_round=100, max_num_epochs=2)
 
 
 @pytest.mark.parametrize(
@@ -290,21 +330,21 @@ def test_inference_with_user_sbi_problems(user_simulator: Callable, user_prior):
             [
                 Gamma(ones(2), ones(1)),
                 MultipleIndependent(
-                    [Uniform(zeros(1), ones(1)), Uniform(zeros(1), ones(1))]
+                    [Uniform(zeros(1), ones(1)), Uniform(zeros(1), ones(1)),]
                 ),
             ],
             marks=pytest.mark.xfail,
         ),  # nested definition.
         pytest.param(
-            [Uniform(0, 1), Beta(1, 2)], marks=pytest.mark.xfail
+            [Uniform(0, 1), Beta(1, 2),], marks=pytest.mark.xfail
         ),  # scalar dists.
-        [Uniform(zeros(1), ones(1)), Uniform(zeros(1), ones(1))],
+        [Uniform(zeros(1), ones(1)), Uniform(zeros(1), ones(1)),],
         (
             Gamma(ones(1), ones(1)),
             Uniform(zeros(1), ones(1)),
             Beta(ones(1), 2 * ones(1)),
         ),
-        [MultivariateNormal(zeros(3), eye(3)), Gamma(ones(1), ones(1))],
+        [MultivariateNormal(zeros(3), eye(3)), Gamma(ones(1), ones(1)),],
     ],
 )
 def test_independent_joint_shapes_and_samples(dists):
@@ -376,55 +416,13 @@ def test_invalid_inputs():
         joint.log_prob(ones(10, 4, 1))
 
 
+@pytest.mark.parametrize("method", (SnpeC, SNL, SRE))
+def test_skip_input_checks(method):
 
-
-@pytest.mark.parametrize(
-    "arg",
-    [
-        ("maf"),
-        ("MAF"),
-        pytest.param(
-            "nn",
-            marks=pytest.mark.xfail(
-                AssertionError,
-                reason=(
-                    "custom density estimator must be a function return nn.Module, "
-                    "not the nn.Module."
-                ),
-            ),
-        ),
-        ("fun"),
-    ],
-)
-def test_passing_custom_density_estimator(arg):
-
-    x_numel = 2
-    y_numel = 2
-    hidden_features = 10
-    num_components = 1
-    mdn = MultivariateGaussianMDN(
-        features=x_numel,
-        context_features=y_numel,
-        hidden_features=hidden_features,
-        hidden_net=nn.Sequential(
-            nn.Linear(y_numel, hidden_features),
-            nn.ReLU(),
-            nn.Dropout(p=0.0),
-            nn.Linear(hidden_features, hidden_features),
-            nn.ReLU(),
-            nn.Linear(hidden_features, hidden_features),
-            nn.ReLU(),
-        ),
-        num_components=num_components,
-        custom_initialization=True,
-    )
-    if arg == "nn":
-        # Just the nn.Module.
-        density_estimator = mdn
-    elif arg == "fun":
-        # A function returning the nn.Module.
-        density_estimator = lambda batch_theta, batch_x: mdn
-    else:
-        density_estimator = arg
-    prior = MultivariateNormal(torch.zeros(2), torch.eye(2))
-    SNPE_C(diagonal_linear_gaussian, prior, density_estimator=density_estimator)
+    with pytest.warns(UserWarning):
+        method(
+            standard_linear_gaussian,
+            Uniform(zeros(1), ones(1)),
+            zeros(1),
+            skip_input_checks=True,
+        )

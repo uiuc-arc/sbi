@@ -1,21 +1,17 @@
-# This file is part of sbi, a toolkit for simulation-based inference. sbi is licensed
-# under the Affero General Public License v3, see <https://www.gnu.org/licenses/>.
-
-from __future__ import annotations
-
-from typing import Tuple, Union
+from typing import Union, Tuple
 
 import torch
 from torch import Tensor
 from torch.distributions import Distribution
 
-from sbi.inference.posteriors.base_posterior import NeuralPosterior
-from sbi.inference.posteriors.direct_posterior import DirectPosterior
-from sbi.simulators.linear_gaussian import true_posterior_linear_gaussian_mvn_prior
+from sbi.inference.posteriors.sbi_posterior import NeuralPosterior
+
 from sbi.utils.metrics import c2st
 
+from sbi.simulators.linear_gaussian import true_posterior_linear_gaussian_mvn_prior
 
-def kl_d_via_monte_carlo(
+
+def dkl_via_monte_carlo(
     p: Union[NeuralPosterior, Distribution],
     q: Union[NeuralPosterior, Distribution],
     num_samples: int = 1000,
@@ -25,8 +21,8 @@ def kl_d_via_monte_carlo(
     q.
 
     Unlike torch.distributions.kl.kl_divergence(p, q), this function does not require p
-    and q to be `torch.Distribution` objects, but just to provide `sample()` and 
-    `log_prob()` methods.
+    and q to be torch.Distribution objects, but just to provide sample() and log_prob()
+    methods.
 
     For added flexibility, we squeeze the output of log_prob() and hence can handle
     outputs such as torch.tensor([[p_1], [p_2], [p_3]]), instead of just
@@ -54,13 +50,13 @@ def kl_d_via_monte_carlo(
     return dkl
 
 
-def get_dkl_gaussian_prior(
+def get_dkl_any_gaussian_prior(
     posterior: NeuralPosterior,
-    x_o: Tensor,
-    likelihood_shift: Tensor,
-    likelihood_cov: Tensor,
-    prior_mean: Tensor,
-    prior_cov: Tensor,
+    true_observation,
+    likelihood_shift,
+    likelihood_cov,
+    prior_mean,
+    prior_cov,
 ) -> Tensor:
     """
     Return the Kullback-Leibler divergence between estimated posterior (with Gaussian
@@ -68,18 +64,14 @@ def get_dkl_gaussian_prior(
 
     Args:
         posterior: The estimated posterior.
-        x_o: The observation where we evaluate the posterior.
-        likelihood_shift: Mean of the likelihood p(x|theta) is likelihood_shift+theta.
-        likelihood_cov: Covariance matrix of likelihood.
-        prior_mean: Mean of prior.
-        prior_cov: Covariance matrix of prior.
+        true_observation: The observation where we evaluate the posterior.
     """
 
     target_dist = true_posterior_linear_gaussian_mvn_prior(
-        x_o, likelihood_shift, likelihood_cov, prior_mean, prior_cov
+        true_observation, likelihood_shift, likelihood_cov, prior_mean, prior_cov
     )
 
-    return kl_d_via_monte_carlo(target_dist, posterior, num_samples=200)
+    return dkl_via_monte_carlo(target_dist, posterior, num_samples=200)
 
 
 def get_prob_outside_uniform_prior(posterior: NeuralPosterior, num_dim: int) -> Tensor:
@@ -98,7 +90,7 @@ def get_prob_outside_uniform_prior(posterior: NeuralPosterior, num_dim: int) -> 
 
 
 def get_normalization_uniform_prior(
-    posterior: DirectPosterior, prior: Distribution, true_observation: Tensor,
+    posterior: NeuralPosterior, prior: Distribution, true_observation: Tensor,
 ) -> Tuple[Tensor, Tensor, Tensor]:
     """
     Return the unnormalized posterior likelihood, the normalized posterior likelihood,
@@ -115,16 +107,16 @@ def get_normalization_uniform_prior(
 
     # Compute unnormalized density, i.e. just the output of the density estimator.
     posterior_likelihood_unnorm = torch.exp(
-        posterior.log_prob(prior_sample, norm_posterior=False)
+        posterior.log_prob(prior_sample, norm_posterior_snpe=False)
     )
     # Compute the normalized density, scale up output of the density
     # estimator by the ratio of posterior samples within the prior bounds.
     posterior_likelihood_norm = torch.exp(
-        posterior.log_prob(prior_sample, norm_posterior=True)
+        posterior.log_prob(prior_sample, norm_posterior_snpe=True)
     )
 
     # Estimate acceptance ratio through rejection sampling.
-    acceptance_prob = posterior.leakage_correction(x=true_observation)
+    acceptance_prob = posterior.get_leakage_correction(x=true_observation)
 
     return posterior_likelihood_unnorm, posterior_likelihood_norm, acceptance_prob
 

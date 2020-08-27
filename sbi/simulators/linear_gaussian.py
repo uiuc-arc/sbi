@@ -1,15 +1,11 @@
-# This file is part of sbi, a toolkit for simulation-based inference. sbi is licensed
-# under the Affero General Public License v3, see <https://www.gnu.org/licenses/>.
-
-
-from typing import Callable, Optional, Union, Dict, Any, Tuple, Union, cast, List, Sequence, TypeVar
+from typing import Union
 
 import torch
 from torch import Tensor
 from torch.distributions import Independent, MultivariateNormal, Uniform
 
 
-def diagonal_linear_gaussian(theta: Tensor, std=1.0) -> Tensor:
+def standard_linear_gaussian(theta: Tensor, std=1.0) -> Tensor:
     """
     Returns samples drawn from Gaussian likelihood with diagonal covariance.
 
@@ -20,40 +16,64 @@ def diagonal_linear_gaussian(theta: Tensor, std=1.0) -> Tensor:
     Returns: Simulated data.
     """
 
+    if theta.ndim == 1:
+        theta = theta.unsqueeze(0)
+
     return theta + std * torch.randn_like(theta)
 
 
-def linear_gaussian(
-    theta: Tensor,
-    likelihood_shift: Tensor,
-    likelihood_cov: Tensor,
-    num_discarded_dims: int = 0,
-) -> Tensor:
+def linear_gaussian(theta: Tensor, likelihood_shift: Tensor, likelihood_cov: Tensor):
     """
     Simulator for linear Gaussian.
 
     Uses Cholesky decomposition to transform samples from standard Gaussian.
-
-    When `num_discarded_dims>0`, return simulation outputs with as many last dimensions
-    discarded. This is implemented by throwing away the last `num_discarded_dims`
-    dimensions of theta and then running the linear Gaussian as always.
 
     Args:
         theta: Parameter sets to be simulated.
         likelihood_shift: The simulator will shift the value of theta by this value.
             Thus, the mean of the Gaussian likelihood will be likelihood_shift+theta.
         likelihood_cov: Covariance matrix of the likelihood.
+
+    Returns: Simulated data.
+    """
+
+    if theta.ndim == 1:
+        theta = theta.unsqueeze(0)
+
+    # Cholesky decomposition
+    chol_factor = torch.cholesky(likelihood_cov)
+
+    return likelihood_shift + theta + torch.mm(chol_factor, torch.randn_like(theta).T).T
+
+
+def linear_gaussian_different_dims(
+    theta: Tensor,
+    likelihood_shift: Tensor,
+    likelihood_cov: Tensor,
+    num_discarded_dims: int = 1,
+):
+    """
+    Returns linear Gaussians simulation outputs where some dimensions are discarded.
+
+    Implemented by throwing away the last `discard_dims` dimensions of theta and then
+    running the linear Gaussian as always.
+
+    Args:
+        theta: Parameter sets to be simulated.
+        likelihood_shift: Mean of the likelihood will be likelihood_shift+theta
+        likelihood_cov: Covariance matrix of the likelihood.
         num_discarded_dims: Number of output dimensions to discard.
 
     Returns: Simulated data.
     """
 
-    if num_discarded_dims:
-        theta = theta[:, :-num_discarded_dims]
+    if theta.ndim == 1:
+        theta = theta.unsqueeze(0)
+    theta = theta[:, :-num_discarded_dims]
 
-    chol_factor = torch.cholesky(likelihood_cov)
+    reduced_output = linear_gaussian(theta, likelihood_shift, likelihood_cov)
 
-    return likelihood_shift + theta + torch.mm(chol_factor, torch.randn_like(theta).T).T
+    return reduced_output
 
 
 def true_posterior_linear_gaussian_mvn_prior(
@@ -62,7 +82,7 @@ def true_posterior_linear_gaussian_mvn_prior(
     likelihood_cov: Tensor,
     prior_mean: Tensor,
     prior_cov: Tensor,
-) -> MultivariateNormal:
+) -> torch.distributions.MultivariateNormal:
     """
     Returns the posterior when likelihood and prior are Gaussian.
 
@@ -92,7 +112,7 @@ def true_posterior_linear_gaussian_mvn_prior(
         likelihood_mean, likelihood_cov, prior_mean, prior_cov
     )
 
-    posterior_dist = MultivariateNormal(product_mean, product_cov)
+    posterior_dist = torch.distributions.MultivariateNormal(product_mean, product_cov)
 
     return posterior_dist
 
@@ -134,9 +154,9 @@ def samples_true_posterior_linear_gaussian_mvn_prior_different_dims(
     )
     posterior_samples = posterior_dist.sample((num_samples,))
 
-    # Because some dimensions were discarded, these ground truth parameters have to
-    # be sampled from the prior and then concatenated to the samples obtained above.
-    prior_dist = MultivariateNormal(prior_mean, prior_cov)
+    # because some dimensions were discarded, these ground truth parameters have to
+    # be sampled from the prior and then concatenated to the above obtained samples.
+    prior_dist = torch.distributions.MultivariateNormal(prior_mean, prior_cov)
     prior_samples = prior_dist.sample((num_samples,))
     relevant_prior_samples = prior_samples[:, -num_discarded_dims:]
     posterior_samples = torch.cat((posterior_samples, relevant_prior_samples), dim=1)
@@ -150,7 +170,7 @@ def samples_true_posterior_linear_gaussian_uniform_prior(
     likelihood_cov: Tensor,
     prior: Union[Uniform, Independent],
     num_samples: int = 1000,
-) -> Tensor:
+):
     """
     Returns ground truth posterior samples for Gaussian likelihood and uniform prior.
 
@@ -191,7 +211,7 @@ def samples_true_posterior_linear_gaussian_uniform_prior(
     return torch.cat(samples)
 
 
-def multiply_gaussian_pdfs(mu1, s1, mu2, s2) -> Tuple[Tensor, Tensor]:
+def multiply_gaussian_pdfs(mu1, s1, mu2, s2):
     """
     Returns the mean and cov of the Gaussian that is the product of two Gaussian pdfs.
 

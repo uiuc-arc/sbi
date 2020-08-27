@@ -1,20 +1,12 @@
-site_name: sbi
+site_name: sbi 
 site_url: "https://mackelab.org/sbi/"
-
+  
 nav:
   - Home: index.md
   - Installation: install.md
-  - Tutorials and Examples:
-      - Introduction:
-        - Getting started: tutorial/00_getting_started.md
-        - Amortized inference: tutorial/01_gaussian_amortized.md
-      - Advanced:
-        - Flexible interface: tutorial/02_flexible_interface.md
-      - Examples:
-        - Hodgkin-Huxley example: examples/00_HH_simulator.md
+  - Tutorial: https://github.com/mackelab/sbi/blob/master/examples/HH_simulator.ipynb" target="_blank
   - Contribute: contribute.md
   - API Reference: reference.md
-  - FAQ: faq.md
   - Credits: credits.md
 
 repo_name: 'mackelab/sbi'
@@ -64,6 +56,7 @@ markdown_extensions:
 
 plugins:
   - search
+  - mknotebooks
   - mkdocstrings:
       default_handler: python
       handlers:

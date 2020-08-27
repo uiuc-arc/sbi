@@ -1,13 +1,10 @@
-# This file is part of sbi, a toolkit for simulation-based inference. sbi is licensed
-# under the Affero General Public License v3, see <https://www.gnu.org/licenses/>.
 
 import collections
 import inspect
-from typing import Callable, Optional, Union, Dict, Any, Tuple, Union, cast, List, Sequence, TypeVar
+from typing import Optional, Tuple, Union
 
-import torch
 import matplotlib as mpl
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import six
 from scipy.stats import gaussian_kde
@@ -114,23 +111,9 @@ def probs2contours(probs, levels):
     return contours
 
 
-def ensure_numpy(t: Union[np.ndarray, torch.Tensor]) -> np.ndarray:
-    """
-    Returns np.ndarray if torch.Tensor was provided.
-
-    Used because samples_nd() can only handle np.ndarray.
-    """
-    if isinstance(t, torch.Tensor):
-        return t.numpy()
-    else:
-        return t
-
-
-def pairplot(
-    samples: Union[List[np.ndarray], List[torch.Tensor], np.ndarray, torch.Tensor],
-    points: Optional[
-        Union[List[np.ndarray], List[torch.Tensor], np.ndarray, torch.Tensor]
-    ] = None,
+def samples_nd(
+    samples: np.ndarray,
+    points: Optional[Union[list, np.ndarray]] = None,
     upper: Optional[str] = "hist",
     diag: Optional[str] = "hist",
     title: Optional[str] = None,
@@ -145,10 +128,14 @@ def pairplot(
     ticks=None,
     tickformatter=mpl.ticker.FormatStrFormatter("%g"),
     tick_labels=None,
-    hist_diag={"alpha": 1.0, "bins": 50, "density": False, "histtype": "step"},
-    hist_offdiag={"bins": 50,},
-    kde_diag={"bw_method": "scott", "bins": 50, "color": "black"},
-    kde_offdiag={"bw_method": "scott", "bins": 50},
+    hist_diag={"alpha": 1.0, "bins": 25, "density": False, "histtype": "step"},
+    hist_offdiag={
+        # 'edgecolor': 'none',
+        # 'linewidth': 0.0,
+        "bins": 25,
+    },
+    kde_diag={"bw_method": "scott", "bins": 100, "color": "black"},
+    kde_offdiag={"bw_method": "scott", "bins": 25},
     contour_offdiag={"levels": [0.68], "percentile": True},
     scatter_offdiag={"alpha": 0.5, "edgecolor": "none", "rasterized": False},
     plot_offdiag={},
@@ -166,13 +153,13 @@ def pairplot(
 
     For developers: if you add arguments that expect dictionaries, make sure to access
     them via the opts dictionary instantiated below. E.g. if you want to access the dict
-    stored in the input variable hist_diag, use opts[`hist_diag`].
+    stored in the input variable hist_diag, use opts['hist_diag'].
 
     Args:
         samples: posterior samples used to build the histogram
         points: list of additional points to scatter
-        upper: plotting style for upper diagonal, {hist, scatter, contour, None}
-        diag: plotting style for diagonal, {hist, None}
+        upper: plotting style for upper diagonal, {'hist', 'scatter', 'contour', None}
+        diag: plotting style for diagonal, {'hist', None}
         title: title string
         legend: whether to plot a legend for the points
         labels: np.ndarray of strings specifying the names of the parameters
@@ -182,7 +169,7 @@ def pairplot(
         points_colors: colors of the points
         subset: List containing the dimensions to plot. E.g. subset=[1,3] will plot
             plot only the 1st and 3rd dimension but will discard the 0th and 2nd (and,
-            if they exist, the 4th, 5th and so on)
+            if they exist, the 4th, 5th...)
         limits: array containing the plot xlim for each parameter dimension. If None,
             just use the min and max of the passed samples
         ticks: location of the ticks for each parameter. If None, just use the min and
@@ -193,13 +180,13 @@ def pairplot(
         hist_offdiag: dictionary passed to np.histogram2d() for off diagonal plots
         kde_diag: dictionary passed to gaussian_kde() for diagonal plots
         kde_offdiag: dictionary passed to gaussian_kde() for off diagonal plots
-        contour_offdiag: dictionary that should contain `percentile` and `levels` keys.
-            `percentile`: bool.
-                If  `percentile`==True,
+        contour_offdiag: dictionary that should contain 'percentile' and 'levels' keys.
+            'percentile': bool.
+                If  'percentile'==True,
                 the levels are made with respect to the max probability of the posterior
-                If `percentile`==False,
+                If 'percentile'==False,
                 the levels are drawn at absolute positions
-            `levels`: list or np.ndarray: specifies the location where the contours are
+            'levels': list or np.ndarray: specifies the location where the contours are
                 drawn.
         scatter_offdiag: dictionary for plt.scatter() on off diagonal
         plot_offdiag: dictionary for plt.plot() on off diagonal
@@ -207,7 +194,7 @@ def pairplot(
         points_offdiag: dictionary for plt.plot() used for plotting points on off
             diagonal
         fig_size: size of the entire figure
-        fig_bg_colors: Dictionary that contains `upper`, `diag`, `lower`, and specifies
+        fig_bg_colors: Dictionary that contains 'upper', 'diag', 'lower', and specifies
             the respective background colors. Passed to ax.set_facecolor()
         fig_subplots_adjust: dictionary passed to fig.subplots_adjust()
         subplots: dictionary passed to plt.subplots()
@@ -224,7 +211,7 @@ def pairplot(
 
     # get default values of function arguments
     # https://stackoverflow.com/questions/12627118/get-a-function-arguments-default-value
-    spec = inspect.getfullargspec(pairplot)
+    spec = inspect.getfullargspec(samples_nd)
 
     # build a dict for the defaults
     # https://stackoverflow.com/questions/12627118/get-a-function-arguments-default-value
@@ -237,20 +224,14 @@ def pairplot(
 
     # Prepare samples
     if type(samples) != list:
-        samples = ensure_numpy(samples)
         samples = [samples]
-    else:
-        for i, sample_pack in enumerate(samples):
-            samples[i] = ensure_numpy(samples[i])
 
     # Prepare points
     if points is None:
         points = []
     if type(points) != list:
-        points = ensure_numpy(points)
         points = [points]
     points = [np.atleast_2d(p) for p in points]
-    points = [np.atleast_2d(ensure_numpy(p)) for p in points]
 
     # Dimensions
     dim = samples[0].shape[1]

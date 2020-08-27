@@ -1,21 +1,13 @@
 # Installation
 
-`sbi` requires Python 3.6 or higher. We recommend to use a [`conda`](https://docs.conda.io/en/latest/miniconda.html) virtual
-environment ([Miniconda installation instructions](https://docs.conda.io/en/latest/miniconda.html])). If `conda` is installed on the system, an environment for
-installing `sbi` can be created as follows:
-```commandline
-# Create an environment for sbi (indicate Python 3.6 or higher); activate it
-$ conda create -n sbi_env python=3.7 && conda activate sbi_env
-```
+## Quick start
 
-Independent of whether you are using `conda` or not, `sbi` can be installed using `pip`:
-```commandline
-$ pip install sbi
-```
+Clone the repo and install all the dependencies using the `environment.yml` file to create a conda environment: `conda env create -f environment.yml`. If you already have an `sbi` environment and want to refresh dependencies, just run `conda env update -f environment.yml --prune`.
 
-To test the installation, drop into a python prompt and run
-```python
-from sbi.examples.minimal import simple
-posterior = simple()
-print(posterior)
+Alternatively, you can install via `setup.py` using `pip install -e ".[dev]"` (the dev flag installs development and testing dependencies).
+
+```
+git clone https://github.com/mackelab/sbi.git
+cd sbi
+pip install -e ".dev"
 ```

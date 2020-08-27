@@ -1,47 +1,17 @@
-# This file is part of sbi, a toolkit for simulation-based inference. sbi is licensed
-# under the Affero General Public License v3, see <https://www.gnu.org/licenses/>.
-
 """Various PyTorch utility functions."""
-
-import warnings
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
 
 import numpy as np
 import torch
-from torch import Tensor, device, float32
+from torch import Tensor, float32
 from torch.distributions import Independent, Uniform
+from typing import Union
 
-from sbi import utils as utils
+import sbi.utils as utils
 from sbi.types import Array, OneOrMore, ScalarFloat
 
 
-def configure_default_device(device: str) -> device:
-    """Set and return the default device to cpu or gpu."""
-
-    if device == "cpu":
-        torch.set_default_tensor_type("torch.FloatTensor")
-    elif device == "gpu":
-        warnings.warn(
-            """Gpu was selected as device, the default tensor type will be set to cuda.
-            Note that currently we do not expect computation speed improvements by
-            moving computation to the GPU. We are working on a better solution and
-            recommend to use device='cpu' for now."""
-        )
-        torch.set_default_tensor_type("torch.cuda.FloatTensor")
-    else:
-        raise ValueError(f"Device '{device}' not supported, use 'cpu' or 'gpu'.")
-
+def get_default_device():
+    """Returns default device by creating a tensor for testing."""
     return torch.ones((1,)).device
 
 
@@ -295,30 +265,5 @@ def atleast_2d(t: Tensor) -> Tensor:
     return t if t.ndim >= 2 else t.reshape(1, -1)
 
 
-def maybe_add_batch_dim_to_size(s: torch.Size) -> torch.Size:
-    """
-    Take a torch.Size and add a batch dimension to it if dimensionality of size is 1.
-
-    (N) -> (1,N)
-    (1,N) -> (1,N)
-    (N,M) -> (N,M)
-    (1,N,M) -> (1,N,M)
-
-    Args:
-        s: Input size, possibly without batch dimension.
-
-    Returns: Batch size.
-
-    """
-    return s if len(s) >= 2 else torch.Size([1]) + s
-
-
 def atleast_2d_float32_tensor(arr: Union[Tensor, np.ndarray]) -> Tensor:
     return atleast_2d(torch.as_tensor(arr, dtype=float32))
-
-
-def batched_first_of_batch(t: Tensor) -> Tensor:
-    """
-    Takes in a tensor of shape (N, M) and outputs tensor of shape (1,M).
-    """
-    return t[:1]

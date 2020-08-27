@@ -1,10 +1,13 @@
-# This file is part of sbi, a toolkit for simulation-based inference. sbi is licensed
-# under the Affero General Public License v3, see <https://www.gnu.org/licenses/>.
-
-"""Utility functions for input/output."""
+"""Utility functions for Input/Output."""
 
 import os
+import time
 from pathlib import Path
+
+def get_timestamp():
+    # TODO make time stamp iso format
+    formatted_time = time.strftime("%d-%b-%y||%H:%M:%S")
+    return formatted_time
 
 
 def get_project_root():
