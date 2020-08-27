@@ -314,7 +314,7 @@ def test_inference_with_user_sbi_problems(
     )
 
     # Run inference.
-    _ = infer(num_rounds=1, num_simulations_per_round=100, max_num_epochs=2)
+    infer(num_rounds=1, num_simulations_per_round=100)
 
 
 @pytest.mark.parametrize(
