@@ -167,7 +167,7 @@ def test_conditional_corrcoeff(corr):
     estimated_corr = conditional_corrcoeff(
         density=d,
         condition=torch.ones(1, 2),
-        limits=torch.tensor([[-3.0, 3.0], [-90, 90]]),
+        limits=torch.tensor([[-2.0, 3.0], [-70, 90]]),
         resolution=500,
     )[0, 1]
 
