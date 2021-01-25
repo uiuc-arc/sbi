@@ -13,5 +13,6 @@ def set_default_tensor_type():
 
 @pytest.fixture(scope="module")
 def set_seed():
-    torch.manual_seed(seed)
-    numpy.random.seed(seed)
+    #torch.manual_seed(seed)
+    #numpy.random.seed(seed)
+    pass
