@@ -168,7 +168,7 @@ def test_conditional_corrcoeff(corr):
         density=d,
         condition=torch.ones(1, 2),
         limits=torch.tensor([[-2.0, 3.0], [-70, 90]]),
-        resolution=500,
+        resolution={0.95: 150, 0.0: 100, 0.99: 130}[corr],
     )[0, 1]
 
     assert torch.abs(corr - estimated_corr) < 1e-3
