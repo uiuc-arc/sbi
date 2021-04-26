@@ -39,7 +39,7 @@ def test_c2st_snpe_on_linearGaussian(
     device = "cpu"
     configure_default_device(device)
     x_o = zeros(1, num_dim)
-    num_samples = 1000
+    num_samples = 380
 
     # likelihood_mean will be likelihood_shift+theta
     likelihood_shift = -1.0 * ones(num_dim)
@@ -70,10 +70,10 @@ def test_c2st_snpe_on_linearGaussian(
         device=device,
     )
 
-    posterior = infer(num_simulations=2000, training_batch_size=100).set_default_x(x_o)
+    posterior = infer(num_simulations=300, training_batch_size=100).set_default_x(x_o)
     samples = posterior.sample((num_samples,))
 
-    # Compute the c2st and assert it is near chance level of 0.5.
+    # Compute the c2st and assert it is  near chance level of 0.5.
     check_c2st(samples, target_samples, alg="snpe_c")
 
     # Checks for log_prob()
